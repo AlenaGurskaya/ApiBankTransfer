@@ -1,76 +1,41 @@
 package ru.netology.test;
 
-import io.restassured.RestAssured;
-import io.restassured.http.ContentType;
-import io.restassured.response.Response;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import ru.netology.data.SQLHelper;
 
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.*;
+import static com.codeborne.selenide.Selenide.open;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static ru.netology.data.DataHelper.*;
+import static ru.netology.data.SQLHelper.*;
 
 public class ApiBankTransferTest {
 
-    private static String token;
+    int secondCardBalanceBefore;
+    String secondCard;
 
-    @BeforeAll
-    static void setUp() {
-        RestAssured.baseURI = "http://localhost:9999";
-
-        // Логин
-        given()
-                .contentType(ContentType.JSON)
-                .body("{\"login\": \"vasya\", \"password\": \"qwerty123\"}")
-                .when()
-                .post("/api/auth")
-                .then()
-                .statusCode(200);
-
-        // Верификация
-        Response response = given()
-                .contentType(ContentType.JSON)
-                .body("{\"login\": \"vasya\", \"code\": \"" + SQLHelper.getVerificationCode() + "\"}")
-                .when()
-                .post("/api/auth/verification")
-                .then()
-                .statusCode(200)
-                .extract().response(); //Извлечение ответа сервера
-
-        token = response.path("token"); //Извлечение значения токена
-    }
-
-    //Просмотр карт
-    @Test
-    void shouldGetCards() {
-        // Given - When - Then
-        // Предусловия
-        given()
-                .header("Authorization", "Bearer " + token) //Добавляет заголовок авторизации с помощью токена
-                .contentType(ContentType.JSON)
-        // Выполняемые действия
-                .when()
-                .get("/api/cards")
-        // Проверки
-                .then()
-                .statusCode(200)
-                .body("$", hasSize(greaterThan(0)));
+    @BeforeEach
+    void setup() {
+        open("http://localhost:9999");
+        //Авторизация
+        var authorizationUser = Authorization.getAuthorizationUser();
+        //Верификация
+        var verificationUser = Verification.getVerificationUser();
+        //Получаем данные карт
+        secondCard = CardsUser.getSecondCardInfo().getCardNumber();
+        //Получаем баланс карт
+        secondCardBalanceBefore = getCardBalance(secondCard);
     }
 
     //Перевод с карты на карту (любую)
     @Test
     void shouldTransferMoney() {
-        // Given - When - Then
-        // Предусловия
-        given()
-                .header("Authorization", "Bearer " + token) //Добавляет заголовок авторизации с помощью токена
-                .contentType(ContentType.JSON)
-                .body("{\"from\": \"5559 0000 0000 0002\", \"to\": \"5559 0000 0000 0008\", \"amount\": 5000}")
-        // Выполняемые действия
-                .when()
-                .post("/api/transfer")
-        // Проверки
-                .then()
-                .statusCode(200);
+        //Валидная сумма списания
+        var validAmount = validAmount(secondCardBalanceBefore);
+        //Перевод
+        TransferMoneyCard.getTransferMoneyBetweenCards(validAmount);
+        //Проверить баланс карты
+        var secondCardBalanceAfter = getCardBalance(secondCard);
+        //Проверка баланса
+        assertEquals(secondCardBalanceBefore - validAmount, secondCardBalanceAfter);
     }
 }

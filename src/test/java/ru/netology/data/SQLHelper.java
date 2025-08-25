@@ -3,7 +3,6 @@ package ru.netology.data;
 import lombok.SneakyThrows;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.handlers.ScalarHandler;
-
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -27,6 +26,15 @@ public class SQLHelper {
         var conn = getConnection();
         var code = runner.query(conn, codeSQL, new ScalarHandler<String>());
         return code;
+    }
+
+    //Получение баланса карты
+    @SneakyThrows
+    public static int getCardBalance(String numberCard) {
+        var codeSQL = "SELECT balance_in_kopecks FROM cards WHERE number = ?";
+        var conn = getConnection();
+        var balance = runner.query(conn, codeSQL, new ScalarHandler<Integer>(), numberCard);
+        return balance;
     }
 
     // Очистка БД
