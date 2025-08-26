@@ -129,12 +129,12 @@ public class DataHelper {
         private TransferMoneyCard() {
         }
 
-        public static TransferMoney transferInfo(int amount) {
-            return new TransferMoney(CardsUser.getSecondCardInfo().getCardNumber(), "5559 0000 0000 0008", amount);
+        public static TransferMoney transferInfo(String cardFrom, String cardTo, int amount) {
+            return new TransferMoney(cardFrom, cardTo, amount);
         }
 
-        public static void getTransferMoneyBetweenCards(int amount) {
-            TransferMoney transferMoney = transferInfo(amount);
+        public static void getTransferMoneyBetweenCards(String cardFrom, String cardTo, int amount) {
+            TransferMoney transferMoney = transferInfo(cardFrom,cardTo, amount);
             String token = sendRequestVerification(Verification.getVerificationCode());
             sendResponceTransfer(token, transferMoney);
         }
